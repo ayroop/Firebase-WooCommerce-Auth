@@ -58,7 +58,8 @@ Below are some admin settings screenshots from the plugin:
 </p>
 
 <p align="center">
-  <img src="assets/images/screenshots/Legal%20Links.png" alt="Legal Links Settings" width="65%" />
+  <img src="assets\images\screenshots\Easy%20login%20during%20the%20checkout.png" alt="Legal Links Settings" width="65%" />
+  
 </p>
 
 ---
