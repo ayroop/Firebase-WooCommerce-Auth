@@ -57,7 +57,7 @@ class FirebaseWooAuthAdmin {
                     </div>
                     <a href="https://ayrop.com" target="_blank" rel="noopener noreferrer" class="firebase-woo-auth-website">ayrop.com</a>
                 </div>
-                <h1><?php esc_html_e('Firebase WooCommerce Authentication Settings', 'firebase-woo-auth'); ?></h1>
+            <h1><?php esc_html_e('Firebase WooCommerce Authentication Settings', 'firebase-woo-auth'); ?></h1>
             </div>
             
             <div class="firebase-woo-auth-notice-container"></div>
@@ -100,7 +100,7 @@ class FirebaseWooAuthAdmin {
 
                 <div id="legal-links" class="firebase-woo-auth-tab-content">
                     <h2><?php esc_html_e('Legal Links', 'firebase-woo-auth'); ?></h2>
-                    <?php
+                <?php
                     $this->render_text_field_with_tooltip('terms_of_service_url', __('Terms of Service URL', 'firebase-woo-auth'), __('URL to your Terms of Service page.', 'firebase-woo-auth'));
                     $this->render_text_field_with_tooltip('privacy_policy_url', __('Privacy Policy URL', 'firebase-woo-auth'), __('URL to your Privacy Policy page.', 'firebase-woo-auth'));
                     ?>
@@ -110,6 +110,39 @@ class FirebaseWooAuthAdmin {
                     <div class="firebase-woo-auth-help-section">
                         <h3><?php esc_html_e('Getting Started', 'firebase-woo-auth'); ?></h3>
                         <p><?php esc_html_e('This plugin integrates Firebase Authentication with your WooCommerce store, providing secure and modern authentication methods for your customers.', 'firebase-woo-auth'); ?></p>
+
+                        <div class="firebase-woo-auth-shortcode-section">
+                            <h4><?php esc_html_e('Shortcode Usage', 'firebase-woo-auth'); ?></h4>
+                            <p><?php esc_html_e('Add the Firebase Authentication UI anywhere on your site using this shortcode:', 'firebase-woo-auth'); ?></p>
+                            <div class="firebase-woo-auth-shortcode-container">
+                                <code id="firebase-auth-shortcode">[firebase_auth_ui]</code>
+                                <button class="firebase-woo-auth-copy-button" data-copy="[firebase_auth_ui]">
+                                    <?php esc_html_e('Copy Shortcode', 'firebase-woo-auth'); ?>
+                                </button>
+                            </div>
+                            <div class="firebase-woo-auth-shortcode-usage">
+                                <h5><?php esc_html_e('Where to Use the Shortcode', 'firebase-woo-auth'); ?></h5>
+                                <ul>
+                                    <li><?php esc_html_e('Pages: Add to any page using the WordPress editor', 'firebase-woo-auth'); ?></li>
+                                    <li><?php esc_html_e('Widgets: Use in text widgets or custom HTML widgets', 'firebase-woo-auth'); ?></li>
+                                    <li><?php esc_html_e('Templates: Add directly to your theme files using do_shortcode()', 'firebase-woo-auth'); ?></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="firebase-woo-auth-woocommerce-section">
+                            <h4><?php esc_html_e('WooCommerce Integration', 'firebase-woo-auth'); ?></h4>
+                            <p><?php esc_html_e('The Firebase Authentication UI is automatically integrated with WooCommerce checkout:', 'firebase-woo-auth'); ?></p>
+                            <ul>
+                                <li><?php esc_html_e('The sign-in options will appear in the checkout process if enabled in WooCommerce settings', 'firebase-woo-auth'); ?></li>
+                                <li><?php esc_html_e('Users can authenticate during checkout without leaving the page', 'firebase-woo-auth'); ?></li>
+                                <li><?php esc_html_e('Authentication status is maintained throughout the checkout process', 'firebase-woo-auth'); ?></li>
+                            </ul>
+                            <div class="firebase-woo-auth-note">
+                                <strong><?php esc_html_e('Note:', 'firebase-woo-auth'); ?></strong>
+                                <p><?php esc_html_e('To enable authentication during checkout, go to WooCommerce > Settings > Accounts & Privacy and enable "Allow customers to log into an existing account during checkout".', 'firebase-woo-auth'); ?></p>
+                            </div>
+                        </div>
 
                         <h4><?php esc_html_e('Setup Guide', 'firebase-woo-auth'); ?></h4>
                         <ol>
