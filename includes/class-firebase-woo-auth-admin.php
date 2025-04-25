@@ -30,7 +30,8 @@ class FirebaseWooAuthAdmin {
         // Localize script
         wp_localize_script('firebase-woo-auth-admin', 'firebaseWooAuthAdmin', array(
             'nonce' => wp_create_nonce('firebase_woo_auth_nonce'),
-            'ajaxurl' => admin_url('admin-ajax.php')
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'logo_url' => FIREBASE_WOO_AUTH_URL . 'assets/images/developer-logo/ayrop-com.svg'
         ));
     }
 
@@ -49,7 +50,15 @@ class FirebaseWooAuthAdmin {
         $this->options = get_option($this->option_name, array());
         ?>
         <div class="wrap firebase-woo-auth-admin">
-            <h1><?php esc_html_e('Firebase WooCommerce Authentication Settings', 'firebase-woo-auth'); ?></h1>
+            <div class="firebase-woo-auth-header">
+                <div class="firebase-woo-auth-logo-container">
+                    <div class="firebase-woo-auth-logo">
+                        <img src="<?php echo esc_url(FIREBASE_WOO_AUTH_URL . 'assets/images/developer-logo/ayrop-com.svg'); ?>" alt="Ayrop.com Logo">
+                    </div>
+                    <a href="https://ayrop.com" target="_blank" rel="noopener noreferrer" class="firebase-woo-auth-website">ayrop.com</a>
+                </div>
+                <h1><?php esc_html_e('Firebase WooCommerce Authentication Settings', 'firebase-woo-auth'); ?></h1>
+            </div>
             
             <div class="firebase-woo-auth-notice-container"></div>
             
