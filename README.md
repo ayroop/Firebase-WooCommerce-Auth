@@ -47,7 +47,19 @@ _Author: Ayrop_
 
 ## Demo / Screenshots
 
-> _Add screenshots or a GIF here showcasing the login or admin settings page_
+Below are some admin settings screenshots from the plugin:
+
+<p align="center">
+  <img src="assets/images/screenshots/Firebase%20Configuration.png" alt="Firebase Configuration Settings" width="65%" />
+</p>
+
+<p align="center">
+  <img src="assets/images/screenshots/Sign-In%20Methods.png" alt="Sign-In Methods Settings" width="65%" />
+</p>
+
+<p align="center">
+  <img src="assets/images/screenshots/Legal%20Links.png" alt="Legal Links Settings" width="65%" />
+</p>
 
 ---
 
