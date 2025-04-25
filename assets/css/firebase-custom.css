@@ -1,0 +1,34 @@
+.firebase-loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.firebase-loading-spinner span {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    background-image: url('../svg/ripples.svg'); /* Adjust path from CSS to SVG */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Make Firebase UI fully responsive */
+.firebaseui-container {
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.firebase-lazy-container {
+    min-height: 200px;
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .firebaseui-card {
+        margin: 20px;
+    }
+}

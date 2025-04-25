@@ -1,0 +1,87 @@
+.mdl-textfield--floating-label .mdl-textfield__label {
+    font-size: 12px!important;
+}
+
+.mdl-textfield--floating-label.is-focused .mdl-textfield__label, .mdl-textfield--floating-label.is-dirty .mdl-textfield__label, .mdl-textfield--floating-label.has-placeholder .mdl-textfield__label {
+    top: 0!important;
+}
+
+.firebaseui-card-header .firebaseui-title {
+    font-size: calc(15px + 0.4vw) !important;
+	font-family: inherit !important;
+    line-height: 1.2; 
+	color: #212934 !important;
+	margin-bottom: 8px;
+}
+
+/* Optional adjustments for specific screen sizes */
+@media (max-width: 768px) {
+    .firebaseui-card-header .firebaseui-title {
+        font-size: calc(12px + 1vw) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .firebaseui-card-header .firebaseui-title {
+        font-size: calc(10px + 1vw) !important; 
+    }
+}
+
+.mdl-textfield__label {
+    left: 5% !important;
+    top: 25px !important;
+    width: 90% !important;
+}
+
+.firebaseui-container {
+
+    direction: inherit !important;
+    font: inherit !important;
+    max-width: 100% !important;
+    text-align: inherit !important;
+    width: 100% !important;
+}
+
+.firebaseui-idp-button, .firebaseui-tenant-button {
+    direction: inherit !important;
+    max-width: unset !important;
+    text-align: inherit !important;
+}
+
+.firebaseui-provider-sign-in-footer>.firebaseui-tos {
+    text-align: inherit !important;
+    line-height: 2 !important;
+}
+
+.firebaseui-tos-list {
+    text-align: inherit !important;
+}
+
+.mdl-shadow--2dp {
+	box-shadow: unset !important;
+}
+
+/* Preloader CSS */
+#firebaseui-auth-container {
+    position: relative; /* Ensure the container is relative for proper loader positioning */
+    display: none; /* Hide the container initially */
+    width: 100%;
+    height: auto;
+}
+
+/* Loader */
+#loader {
+    position: absolute; /* Position the loader relative to the container */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the loader */
+    z-index: 9999;
+    display: none; /* Hide the preloader by default */
+    justify-content: center;
+    align-items: center;
+}
+
+#loader img {
+    width: 150px;
+    height: auto;
+}
