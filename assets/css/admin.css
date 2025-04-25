@@ -248,21 +248,117 @@
 /* Help Section */
 .firebase-woo-auth-help-section {
     background: #f8f9fa;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
     margin-top: 20px;
 }
 
-.firebase-woo-auth-help-section h3 {
-    margin-top: 0;
+.firebase-woo-auth-help-section h3,
+.firebase-woo-auth-help-section h4,
+.firebase-woo-auth-help-section h5 {
     color: #1d2327;
+    margin-top: 0;
+    margin-bottom: 15px;
 }
 
-.firebase-woo-auth-help-section pre {
+.firebase-woo-auth-help-section h3 {
+    font-size: 24px;
+    border-bottom: 2px solid #e5e5e5;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+}
+
+.firebase-woo-auth-help-section h4 {
+    font-size: 20px;
+    margin-top: 30px;
+}
+
+.firebase-woo-auth-help-section h5 {
+    font-size: 16px;
+    color: #2271b1;
+}
+
+.firebase-woo-auth-help-section p {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.firebase-woo-auth-help-section ol,
+.firebase-woo-auth-help-section ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.firebase-woo-auth-help-section li {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.firebase-woo-auth-methods {
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+.firebase-woo-auth-methods li {
     background: #fff;
     padding: 15px;
-    border-radius: 4px;
-    overflow-x: auto;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.firebase-woo-auth-methods strong {
+    color: #2271b1;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.firebase-woo-auth-methods a {
+    display: inline-block;
+    margin-top: 10px;
+    color: #2271b1;
+    text-decoration: none;
+}
+
+.firebase-woo-auth-methods a:hover {
+    text-decoration: underline;
+}
+
+.firebase-woo-auth-troubleshooting {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.firebase-woo-auth-issue {
+    margin-bottom: 20px;
+}
+
+.firebase-woo-auth-issue:last-child {
+    margin-bottom: 0;
+}
+
+.firebase-woo-auth-issue strong {
+    color: #d63638;
+}
+
+.firebase-woo-auth-support {
+    background: #fff;
+    padding: 20px;
+    border-radius: 6px;
+    margin-top: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.firebase-woo-auth-support a {
+    color: #2271b1;
+    text-decoration: none;
+}
+
+.firebase-woo-auth-support a:hover {
+    text-decoration: underline;
 }
 
 /* Responsive Design */

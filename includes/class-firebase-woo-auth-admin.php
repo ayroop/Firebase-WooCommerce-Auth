@@ -109,23 +109,94 @@ class FirebaseWooAuthAdmin {
                 <div id="help" class="firebase-woo-auth-tab-content">
                     <div class="firebase-woo-auth-help-section">
                         <h3><?php esc_html_e('Getting Started', 'firebase-woo-auth'); ?></h3>
-                        <p><?php esc_html_e('To set up Firebase Authentication for your WooCommerce store, follow these steps:', 'firebase-woo-auth'); ?></p>
+                        <p><?php esc_html_e('This plugin integrates Firebase Authentication with your WooCommerce store, providing secure and modern authentication methods for your customers.', 'firebase-woo-auth'); ?></p>
+
+                        <h4><?php esc_html_e('Setup Guide', 'firebase-woo-auth'); ?></h4>
                         <ol>
-                            <li><?php esc_html_e('Create a Firebase project in the Firebase Console', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Enable the authentication methods you want to use', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Configure your Firebase project settings', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Copy your Firebase configuration values to the fields above', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Save the settings and test the authentication', 'firebase-woo-auth'); ?></li>
+                            <li>
+                                <strong><?php esc_html_e('Create a Firebase Project', 'firebase-woo-auth'); ?></strong>
+                                <p><?php esc_html_e('Go to the Firebase Console and create a new project or select an existing one.', 'firebase-woo-auth'); ?></p>
+                                <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Open Firebase Console', 'firebase-woo-auth'); ?></a>
+                            </li>
+                            <li>
+                                <strong><?php esc_html_e('Enable Authentication Methods', 'firebase-woo-auth'); ?></strong>
+                                <p><?php esc_html_e('In your Firebase Console, navigate to Authentication > Sign-in method and enable the methods you want to use:', 'firebase-woo-auth'); ?></p>
+                                <ul class="firebase-woo-auth-methods">
+                                    <li>
+                                        <strong><?php esc_html_e('Email/Password', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Traditional email and password authentication. Users can create accounts with their email addresses.', 'firebase-woo-auth'); ?></p>
+                                        <a href="https://firebase.google.com/docs/auth/web/password-auth" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Documentation', 'firebase-woo-auth'); ?></a>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('Google Sign-In', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Allow users to sign in with their Google accounts. Requires OAuth 2.0 client ID setup.', 'firebase-woo-auth'); ?></p>
+                                        <a href="https://firebase.google.com/docs/auth/web/google-signin" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Documentation', 'firebase-woo-auth'); ?></a>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('GitHub Sign-In', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Enable GitHub authentication for developers and tech-savvy users.', 'firebase-woo-auth'); ?></p>
+                                        <a href="https://firebase.google.com/docs/auth/web/github-auth" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Documentation', 'firebase-woo-auth'); ?></a>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('Phone Authentication', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Allow users to sign in using their phone numbers. Requires Firebase Blaze plan.', 'firebase-woo-auth'); ?></p>
+                                        <a href="https://firebase.google.com/docs/auth/web/phone-auth" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Documentation', 'firebase-woo-auth'); ?></a>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('Email Link Authentication', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Passwordless authentication using magic links sent via email.', 'firebase-woo-auth'); ?></p>
+                                        <a href="https://firebase.google.com/docs/auth/web/email-link-auth" target="_blank" rel="noopener noreferrer"><?php esc_html_e('Documentation', 'firebase-woo-auth'); ?></a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong><?php esc_html_e('Configure Firebase Project', 'firebase-woo-auth'); ?></strong>
+                                <p><?php esc_html_e('Get your Firebase configuration values from Project Settings > General > Your apps > Web app.', 'firebase-woo-auth'); ?></p>
+                            </li>
+                            <li>
+                                <strong><?php esc_html_e('Authorize Your Domain', 'firebase-woo-auth'); ?></strong>
+                                <p><?php esc_html_e('Add your website domain to the authorized domains list in Firebase Console > Authentication > Settings > Authorized domains.', 'firebase-woo-auth'); ?></p>
+                            </li>
                         </ol>
 
-                        <h3><?php esc_html_e('Troubleshooting', 'firebase-woo-auth'); ?></h3>
-                        <p><?php esc_html_e('If you encounter any issues:', 'firebase-woo-auth'); ?></p>
-                        <ul>
-                            <li><?php esc_html_e('Verify your Firebase configuration values are correct', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Check that the required authentication methods are enabled in Firebase Console', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Ensure your domain is authorized in Firebase Console', 'firebase-woo-auth'); ?></li>
-                            <li><?php esc_html_e('Check the browser console for any error messages', 'firebase-woo-auth'); ?></li>
-                        </ul>
+                        <h4><?php esc_html_e('Troubleshooting', 'firebase-woo-auth'); ?></h4>
+                        <div class="firebase-woo-auth-troubleshooting">
+                            <div class="firebase-woo-auth-issue">
+                                <h5><?php esc_html_e('Authentication Not Working', 'firebase-woo-auth'); ?></h5>
+                                <ul>
+                                    <li><?php esc_html_e('Verify all Firebase configuration values are correct', 'firebase-woo-auth'); ?></li>
+                                    <li><?php esc_html_e('Check that the required authentication methods are enabled in Firebase Console', 'firebase-woo-auth'); ?></li>
+                                    <li><?php esc_html_e('Ensure your domain is authorized in Firebase Console', 'firebase-woo-auth'); ?></li>
+                                </ul>
+                            </div>
+                            <div class="firebase-woo-auth-issue">
+                                <h5><?php esc_html_e('Common Errors', 'firebase-woo-auth'); ?></h5>
+                                <ul>
+                                    <li>
+                                        <strong><?php esc_html_e('Invalid API Key', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Check that you\'ve copied the correct API key from Firebase Console.', 'firebase-woo-auth'); ?></p>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('Domain Not Authorized', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('Add your domain to the authorized domains list in Firebase Console.', 'firebase-woo-auth'); ?></p>
+                                    </li>
+                                    <li>
+                                        <strong><?php esc_html_e('OAuth Configuration Missing', 'firebase-woo-auth'); ?></strong>
+                                        <p><?php esc_html_e('For social sign-in methods, ensure you\'ve configured the OAuth credentials in Firebase Console.', 'firebase-woo-auth'); ?></p>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="firebase-woo-auth-support">
+                            <h4><?php esc_html_e('Need More Help?', 'firebase-woo-auth'); ?></h4>
+                            <p><?php esc_html_e('If you\'re still experiencing issues, please:', 'firebase-woo-auth'); ?></p>
+                            <ul>
+                                <li><?php esc_html_e('Check the browser console for error messages', 'firebase-woo-auth'); ?></li>
+                                <li><?php esc_html_e('Review the Firebase documentation for your specific authentication method', 'firebase-woo-auth'); ?></li>
+                                <li><?php esc_html_e('Contact our support team at support@ayrop.com', 'firebase-woo-auth'); ?></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
