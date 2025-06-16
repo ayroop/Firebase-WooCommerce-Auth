@@ -1,11 +1,16 @@
 <?php
-/**
- * Plugin Name: Firebase WooCommerce Auth
- * Description: Allows users to sign in using Firebase Authentication methods and logs them into WooCommerce.
- * Version: 1.0.0
- * Author: Ayrop
- * Text Domain: firebase-woo-auth
- */
+/*
+Plugin Name: Firebase WooCommerce Authentication
+Plugin URI: https://ayrop.com
+Description: Integrate Firebase Authentication with WooCommerce for secure and modern user authentication.
+Version: 1.0.0
+Author: Ayrop.com
+Author URI: https://ayrop.com
+Text Domain: firebase-woo-auth
+Domain Path: /languages
+License: GPL v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+*/
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly

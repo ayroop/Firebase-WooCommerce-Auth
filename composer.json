@@ -1,0 +1,28 @@
+{
+    "name": "ayrop/firebase-woo-auth",
+    "description": "Firebase Authentication integration for WooCommerce",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Ayrop.com",
+            "email": "support@ayrop.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "firebase/php-jwt": "^6.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "FirebaseWooAuth\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

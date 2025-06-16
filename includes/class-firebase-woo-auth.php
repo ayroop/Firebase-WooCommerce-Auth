@@ -17,6 +17,8 @@ class FirebaseWooAuth {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('wp_ajax_nopriv_firebase_authenticate', array($this, 'firebase_authenticate'));
         add_action('wp_ajax_firebase_authenticate', array($this, 'firebase_authenticate'));
+        add_action('wp_ajax_nopriv_firebase_auth_popup', array($this, 'render_auth_popup'));
+        add_action('wp_ajax_firebase_auth_popup', array($this, 'render_auth_popup'));
 
         // Disable cache for specific pages
         add_action('template_redirect', array($this, 'disable_cache_for_specific_pages'));
@@ -26,18 +28,45 @@ class FirebaseWooAuth {
 
         // Ensure phone number appears in the WooCommerce billing fields
         add_filter('woocommerce_checkout_fields', array($this, 'add_phone_to_billing_fields'));
+        
+        // Add hook for customizing WooCommerce billing fields
+        add_filter('woocommerce_checkout_fields', array($this, 'customize_woocommerce_billing_fields'));
     }
 
 	// Function to customize WooCommerce billing fields
     public function customize_woocommerce_billing_fields($fields) {
-        if (is_user_logged_in()) {
-            $user_id = get_current_user_id();
-            
-            // Fetch billing data from user meta
-            $fields['billing']['billing_first_name']['default'] = get_user_meta($user_id, 'billing_first_name', true);
-            $fields['billing']['billing_last_name']['default'] = get_user_meta($user_id, 'billing_last_name', true);
-            $fields['billing']['billing_email']['default'] = wp_get_current_user()->user_email;
-            $fields['billing']['billing_phone']['default'] = get_user_meta($user_id, 'billing_phone', true);
+        if (!is_user_logged_in() || !class_exists('WooCommerce')) {
+            return $fields;
+        }
+
+        $user_id = get_current_user_id();
+        $user = get_user_by('id', $user_id);
+        
+        if (!$user) {
+            return $fields;
+        }
+
+        // Enhanced field mapping with fallbacks
+        $fields['billing']['billing_first_name']['default'] = get_user_meta($user_id, 'billing_first_name', true) ?: $user->first_name;
+        $fields['billing']['billing_last_name']['default'] = get_user_meta($user_id, 'billing_last_name', true) ?: $user->last_name;
+        $fields['billing']['billing_email']['default'] = $user->user_email;
+        $fields['billing']['billing_phone']['default'] = get_user_meta($user_id, 'billing_phone', true);
+        
+        // Add address fields if available
+        $address_fields = array(
+            'billing_address_1',
+            'billing_address_2',
+            'billing_city',
+            'billing_state',
+            'billing_postcode',
+            'billing_country'
+        );
+        
+        foreach ($address_fields as $field) {
+            $value = get_user_meta($user_id, $field, true);
+            if (!empty($value)) {
+                $fields['billing'][$field]['default'] = $value;
+            }
         }
         
         return $fields;
@@ -82,7 +111,8 @@ class FirebaseWooAuth {
             'enable_email_link' => !empty($options['enable_email_link']),
             'enable_microsoft' => !empty($options['enable_microsoft']),
             'terms_of_service_url' => isset($options['terms_of_service_url']) ? esc_url($options['terms_of_service_url']) : '',
-            'privacy_policy_url' => isset($options['privacy_policy_url']) ? esc_url($options['privacy_policy_url']) : ''
+            'privacy_policy_url' => isset($options['privacy_policy_url']) ? esc_url($options['privacy_policy_url']) : '',
+            'nonce' => wp_create_nonce('firebase_woo_auth_nonce')
         ));
     }
 
@@ -108,209 +138,305 @@ class FirebaseWooAuth {
 }
 
     public function firebase_authenticate() {
-    $id_token = isset($_POST['id_token']) ? sanitize_text_field($_POST['id_token']) : '';
+        try {
+            // Verify nonce
+            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'firebase_woo_auth_nonce')) {
+                wp_send_json_error('Invalid nonce');
+                return;
+            }
 
-    if (empty($id_token)) {
-        wp_send_json_error('No ID token provided.');
-    }
+            $id_token = isset($_POST['id_token']) ? sanitize_text_field($_POST['id_token']) : '';
 
-    $verified_token = $this->verify_id_token($id_token);
+            if (empty($id_token)) {
+                wp_send_json_error('No ID token provided');
+                return;
+            }
 
-    if (!$verified_token) {
-        wp_send_json_error('Invalid ID token.');
-    }
+            // Verify the ID token
+            $verified_token = $this->verify_id_token($id_token);
+            if (!$verified_token) {
+                wp_send_json_error('Invalid ID token');
+                return;
+            }
 
-    // Extract user data from Firebase token
-    $uid = $verified_token['sub'];
-    $email = isset($verified_token['email']) ? $verified_token['email'] : '';
-    $displayName = isset($verified_token['name']) ? $verified_token['name'] : '';
-    $email_verified = isset($verified_token['email_verified']) ? $verified_token['email_verified'] : false;
-    $phoneNumber = isset($verified_token['phone_number']) ? $verified_token['phone_number'] : '';
-    $provider = $verified_token['firebase']['sign_in_provider']; // Identify provider (phone, GitHub, Google, etc.)
+            // Extract user data
+            $uid = $verified_token['sub'];
+            $email = isset($verified_token['email']) ? $verified_token['email'] : '';
+            $displayName = isset($verified_token['name']) ? $verified_token['name'] : '';
+            $email_verified = isset($verified_token['email_verified']) ? $verified_token['email_verified'] : false;
+            $phoneNumber = isset($verified_token['phone_number']) ? $verified_token['phone_number'] : '';
+            $provider = $verified_token['firebase']['sign_in_provider'];
 
-    // Handle the case where no email is provided, e.g., phone auth
-    if (empty($email)) {
-        if (!empty($phoneNumber)) {
-            // Generate placeholder email based on phone number
-            $site_domain = parse_url(home_url(), PHP_URL_HOST);
-            $email = preg_replace('/[^a-zA-Z0-9]/', '', $phoneNumber) . '@' . $site_domain;
-            $username = sanitize_user(str_replace('+', '', $phoneNumber));
-        } else {
-            wp_send_json_error('Neither email nor phone number available. Cannot create account.');
-        }
-        $need_email_update = true; // Mark that email needs to be updated later
-    } else {
-        // Create a username from email if available
-        $username = sanitize_user(current(explode('@', $email)), true);
-        $need_email_update = false;
-    }
+            // Handle missing email
+            if (empty($email)) {
+                if (!empty($phoneNumber)) {
+                    $site_domain = parse_url(home_url(), PHP_URL_HOST);
+                    $email = preg_replace('/[^a-zA-Z0-9]/', '', $phoneNumber) . '@' . $site_domain;
+                    $username = sanitize_user(str_replace('+', '', $phoneNumber));
+                } else {
+                    wp_send_json_error('Neither email nor phone number available');
+                    return;
+                }
+                $need_email_update = true;
+            } else {
+                $username = sanitize_user(current(explode('@', $email)), true);
+                $need_email_update = false;
+            }
 
-    // Ensure unique username
-    if (username_exists($username)) {
-        $username .= '_' . wp_generate_password(4, false, false); // Make unique
-    }
+            // Ensure unique username
+            if (username_exists($username)) {
+                $username .= '_' . wp_generate_password(4, false, false);
+            }
 
-    // Check if the user already exists by email
-    $user = get_user_by('email', $email);
+            // Check if user exists
+            $user = get_user_by('email', $email);
 
-    if (!$user) {
-        // Create a new WooCommerce user if not found
-        $random_password = wp_generate_password(12, false);
-        $user_id = wp_create_user($username, $random_password, $email);
+            if (!$user) {
+                // Create new user
+                $random_password = wp_generate_password(12, false);
+                $user_id = wp_create_user($username, $random_password, $email);
 
-        // Update WooCommerce fields with Firebase data
-        wp_update_user(array(
-            'ID' => $user_id,
-            'display_name' => $displayName,
-            'first_name' => isset($verified_token['given_name']) ? $verified_token['given_name'] : '',
-            'last_name' => isset($verified_token['family_name']) ? $verified_token['family_name'] : '',
-            'nickname' => $displayName,
-        ));
+                if (is_wp_error($user_id)) {
+                    wp_send_json_error($user_id->get_error_message());
+                    return;
+                }
 
-        // Populate WooCommerce billing fields
-        $this->populate_woocommerce_billing_info($user_id, $verified_token);
+                // Update user data
+                wp_update_user(array(
+                    'ID' => $user_id,
+                    'display_name' => $displayName,
+                    'first_name' => isset($verified_token['given_name']) ? $verified_token['given_name'] : '',
+                    'last_name' => isset($verified_token['family_name']) ? $verified_token['family_name'] : '',
+                    'nickname' => $displayName,
+                ));
 
-        // If phone auth is used, mark that the email needs to be updated
-        if ($need_email_update) {
-            update_user_meta($user_id, 'need_email_update', true);
-        }
+                // Update user meta
+                if ($need_email_update) {
+                    update_user_meta($user_id, 'need_email_update', true);
+                }
 
-        // Re-fetch the newly created user
-        $user = get_user_by('id', $user_id);
-    } else {
-        // Update existing WooCommerce user with the latest Firebase data
-        wp_update_user(array(
-            'ID' => $user->ID,
-            'display_name' => $displayName,
-            'first_name' => isset($verified_token['given_name']) ? $verified_token['given_name'] : '',
-            'last_name' => isset($verified_token['family_name']) ? $verified_token['family_name'] : '',
-            'nickname' => $displayName,
-        ));
+                $user = get_user_by('id', $user_id);
+            }
 
-        // Update WooCommerce billing info for existing user
-        $this->populate_woocommerce_billing_info($user->ID, $verified_token);
-    }
+            // Log the user in
+            wp_set_current_user($user->ID);
+            wp_set_auth_cookie($user->ID);
+            
+            // Set WooCommerce session
+            if (class_exists('WooCommerce')) {
+                WC()->session->set_customer_session_cookie(true);
+            }
 
-    // Log the user in and maintain the WooCommerce session
-    wp_set_current_user($user->ID);
-    wp_set_auth_cookie($user->ID);
-    WC()->session->set_customer_session_cookie(true);
+            // Get redirect URL
+            $redirect_url = get_transient('firebase_auth_redirect_url');
+            if (!$redirect_url) {
+                $redirect_url = wc_get_checkout_url();
+            }
+            delete_transient('firebase_auth_redirect_url');
 
-    // Redirect the user to the correct page (e.g., checkout or account)
-    $redirect_url = get_transient('firebase_auth_redirect_url');
-    if (!$redirect_url) {
-        $redirect_url = wc_get_checkout_url(); // Default to checkout page if no redirect is set
-    }
-    delete_transient('firebase_auth_redirect_url'); // Clean up transient
+            wp_send_json_success(array('redirect_url' => $redirect_url));
 
-    wp_send_json_success(array('redirect_url' => $redirect_url));
-
-    wp_die();
-}
-
-// Helper function to populate WooCommerce billing fields
-public function populate_woocommerce_billing_info($user_id, $verified_token) {
-    $billing_data = array(
-        'first_name' => isset($verified_token['given_name']) ? $verified_token['given_name'] : '',
-        'last_name' => isset($verified_token['family_name']) ? $verified_token['family_name'] : '',
-        'email' => isset($verified_token['email']) ? $verified_token['email'] : '',
-        'phone' => isset($verified_token['phone_number']) ? $verified_token['phone_number'] : '',
-    );
-	//Update Woo Billing Information
-    foreach ($billing_data as $field => $value) {
-        if (!empty($value)) {
-            update_user_meta($user_id, "billing_{$field}", sanitize_text_field($value));
+        } catch (Exception $e) {
+            $this->log_error('Authentication error: ' . $e->getMessage());
+            wp_send_json_error('Server error: ' . $e->getMessage());
         }
     }
-
-    // Allow other plugins or custom code to modify billing fields
-    do_action('firebase_woo_auth_after_billing_update', $user_id, $billing_data);
-}
-
 
     private function verify_id_token($id_token) {
-        $jwks = $this->get_firebase_jwks();
-        if (!$jwks) {
+        if (empty($id_token)) {
+            $this->log_error('Empty ID token provided');
             return false;
         }
 
-        list($header64, $payload64, $signature64) = explode('.', $id_token);
-        $header = json_decode($this->urlsafe_b64decode($header64), true);
+        try {
+            // Use Firebase Admin SDK for proper token verification
+            if (!class_exists('Firebase\JWT\JWT')) {
+                require_once FIREBASE_WOO_AUTH_PATH . 'vendor/autoload.php';
+            }
 
-        if (!isset($header['kid'])) {
+            $project_id = $this->firebaseConfig['projectId'];
+            if (empty($project_id)) {
+                $this->log_error('Firebase Project ID is not configured');
+                return false;
+            }
+
+            // Fetch JWKS with retry mechanism
+            $jwks_url = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+            $jwks = $this->get_firebase_jwks_with_retry($jwks_url);
+            
+            if (!$jwks) {
+                $this->log_error('Failed to fetch JWKS after retries');
+                return false;
+            }
+
+            // Parse and validate token structure
+            $segments = explode('.', $id_token);
+            if (count($segments) !== 3) {
+                $this->log_error('Invalid token structure');
+                return false;
+            }
+
+            list($header64, $payload64, $signature64) = $segments;
+            
+            // Decode and validate header
+            $header = json_decode($this->urlsafe_b64decode($header64), true);
+            if (!$header || !isset($header['kid'])) {
+                $this->log_error('Invalid token header or missing KID');
+                return false;
+            }
+
+            $kid = $header['kid'];
+            if (!isset($jwks[$kid])) {
+                $this->log_error('Invalid KID in token');
+                return false;
+            }
+
+            // Get public key and verify signature
+            $public_key = $this->get_public_key_from_jwk($jwks[$kid]);
+            if (!$public_key) {
+                $this->log_error('Failed to generate public key from JWK');
+                return false;
+            }
+
+            // Verify token signature and decode payload
+            $decoded = $this->decode_jwt($id_token, $public_key);
+            if (!$decoded) {
+                $this->log_error('Token signature verification failed');
+                return false;
+            }
+
+            // Validate token claims
+            if (!$this->validate_token_claims($decoded, $project_id)) {
+                return false;
+            }
+
+            return $decoded;
+        } catch (Exception $e) {
+            $this->log_error('Token verification failed: ' . $e->getMessage());
             return false;
         }
-
-        $kid = $header['kid'];
-
-        if (!isset($jwks[$kid])) {
-            return false;
-        }
-
-        $cert = $jwks[$kid];
-        $public_key = openssl_pkey_get_public($cert);
-        if (!$public_key) {
-            return false;
-        }
-
-        $verified_token = $this->decode_jwt($id_token, $public_key);
-
-        //openssl_free_key($public_key);
-
-        return $verified_token;
     }
 
-    private function get_firebase_jwks() {
-        $keys = get_transient('firebase_public_keys');
+    private function get_firebase_jwks_with_retry($jwks_url, $max_retries = 3) {
+        $retry_count = 0;
+        $last_error = null;
 
-        if (!$keys) {
-            $response = wp_remote_get('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+        while ($retry_count < $max_retries) {
+            try {
+                $response = wp_remote_get($jwks_url, array(
+                    'timeout' => 10,
+                    'sslverify' => true
+                ));
 
-            if (is_wp_error($response)) {
-                return false;
+                if (is_wp_error($response)) {
+                    $last_error = $response->get_error_message();
+                    $retry_count++;
+                    sleep(1); // Wait before retry
+                    continue;
+                }
+
+                $status_code = wp_remote_retrieve_response_code($response);
+                if ($status_code !== 200) {
+                    $last_error = "HTTP {$status_code}";
+                    $retry_count++;
+                    sleep(1);
+                    continue;
+                }
+
+                $body = wp_remote_retrieve_body($response);
+                $jwks = json_decode($body, true);
+
+                if (!$jwks) {
+                    $last_error = 'Invalid JWKS response';
+                    $retry_count++;
+                    sleep(1);
+                    continue;
+                }
+
+                // Cache successful response
+                set_transient('firebase_public_keys', $jwks, HOUR_IN_SECONDS);
+                return $jwks;
+
+            } catch (Exception $e) {
+                $last_error = $e->getMessage();
+                $retry_count++;
+                sleep(1);
             }
-
-            $keys = json_decode($response['body'], true);
-
-            if (!$keys) {
-                return false;
-            }
-
-            set_transient('firebase_public_keys', $keys, HOUR_IN_SECONDS);
         }
 
-        return $keys;
+        $this->log_error("Failed to fetch JWKS after {$max_retries} attempts. Last error: {$last_error}");
+        return false;
+    }
+
+    private function validate_token_claims($decoded, $project_id) {
+        $now = time();
+        
+        // Check if token is expired
+        if (!isset($decoded->exp) || $decoded->exp < $now) {
+            $this->log_error('Token has expired');
+            return false;
+        }
+
+        // Check if token is not yet valid
+        if (!isset($decoded->iat) || $decoded->iat > $now) {
+            $this->log_error('Token is not yet valid');
+            return false;
+        }
+
+        // Verify audience
+        if (!isset($decoded->aud) || $decoded->aud !== $project_id) {
+            $this->log_error('Invalid audience');
+            return false;
+        }
+
+        // Verify issuer
+        $expected_issuer = "https://securetoken.google.com/{$project_id}";
+        if (!isset($decoded->iss) || $decoded->iss !== $expected_issuer) {
+            $this->log_error('Invalid issuer');
+            return false;
+        }
+
+        // Verify subject (user ID)
+        if (!isset($decoded->sub) || empty($decoded->sub)) {
+            $this->log_error('Missing or invalid subject');
+            return false;
+        }
+
+        // Verify auth_time if present
+        if (isset($decoded->auth_time) && $decoded->auth_time > $now) {
+            $this->log_error('Invalid auth_time');
+            return false;
+        }
+
+        return true;
     }
 
     private function decode_jwt($jwt, $public_key) {
-        $segments = explode('.', $jwt);
-        if (count($segments) != 3) {
-            return false;
-        }
-
-        list($header64, $payload64, $signature64) = $segments;
-
-        $header = json_decode($this->urlsafe_b64decode($header64), true);
-        $payload = json_decode($this->urlsafe_b64decode($payload64), true);
-        $signature = $this->urlsafe_b64decode($signature64);
-
-        $data = "$header64.$payload64";
-
-        $success = openssl_verify($data, $signature, $public_key, OPENSSL_ALGO_SHA256);
-
-        if ($success === 1) {
-            $project_id = $this->firebaseConfig['projectId'];
-            if ($payload['iss'] !== "https://securetoken.google.com/$project_id" || $payload['aud'] !== $project_id) {
+        try {
+            $segments = explode('.', $jwt);
+            if (count($segments) !== 3) {
                 return false;
             }
 
-            $current_time = time();
-            if ($payload['exp'] < $current_time || $payload['iat'] > $current_time) {
+            list($header64, $payload64, $signature64) = $segments;
+            $data = "$header64.$payload64";
+            $signature = $this->urlsafe_b64decode($signature64);
+
+            // Verify signature
+            $success = openssl_verify($data, $signature, $public_key, OPENSSL_ALGO_SHA256);
+            if ($success !== 1) {
+                return false;
+            }
+
+            // Decode payload
+            $payload = json_decode($this->urlsafe_b64decode($payload64));
+            if (!$payload) {
                 return false;
             }
 
             return $payload;
-        } else {
+        } catch (Exception $e) {
+            $this->log_error('JWT decoding failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -348,5 +474,143 @@ public function populate_woocommerce_billing_info($user_id, $verified_token) {
             'priority'    => 20,
         );
         return $fields;
+    }
+
+    public function render_auth_popup() {
+        // Set proper headers for popup
+        header('X-Frame-Options: SAMEORIGIN');
+        header('Cross-Origin-Opener-Policy: unsafe-none');
+        header('Cross-Origin-Embedder-Policy: unsafe-none');
+        header('Access-Control-Allow-Origin: ' . home_url());
+        header('Access-Control-Allow-Credentials: true');
+        header('Permissions-Policy: storage-access=*');
+        
+        // Get provider from request
+        $provider = isset($_GET['provider']) ? sanitize_text_field($_GET['provider']) : '';
+        
+        // Render popup content
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title><?php _e('Authentication', 'firebase-woo-auth'); ?></title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+                body {
+                    font-family: 'Lexend Deca', sans-serif;
+                }
+            </style>
+            <?php wp_head(); ?>
+        </head>
+        <body>
+            <div id="firebaseui-auth-container"></div>
+            <script>
+                // Initialize Firebase UI in popup
+                window.addEventListener('load', function() {
+                    try {
+                        // Initialize Firebase if not already initialized
+                        if (!firebase.apps.length) {
+                            firebase.initializeApp(<?php echo json_encode($this->firebaseConfig); ?>);
+                        }
+
+                        // Configure Firebase UI
+                        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+                        const uiConfig = {
+                            callbacks: {
+                                signInSuccessWithAuthResult: function(authResult) {
+                                    // Send result back to opener
+                                    if (window.opener) {
+                                        window.opener.postMessage({
+                                            type: 'firebase_auth_complete',
+                                            id_token: authResult.credential.idToken
+                                        }, window.opener.location.origin);
+                                    }
+                                    window.close();
+                                    return false;
+                                },
+                                signInFailure: function(error) {
+                                    if (window.opener) {
+                                        window.opener.postMessage({
+                                            type: 'firebase_auth_error',
+                                            error: error.message
+                                        }, window.opener.location.origin);
+                                    }
+                                    window.close();
+                                    return false;
+                                }
+                            },
+                            signInFlow: 'popup',
+                            signInOptions: [
+                                <?php echo $this->get_provider_config($provider); ?>
+                            ],
+                            tosUrl: '<?php echo esc_url(home_url('/terms')); ?>',
+                            privacyPolicyUrl: '<?php echo esc_url(home_url('/privacy')); ?>'
+                        };
+
+                        // Start Firebase UI
+                        ui.start('#firebaseui-auth-container', uiConfig);
+                    } catch (error) {
+                        console.error('Firebase UI initialization error:', error);
+                        if (window.opener) {
+                            window.opener.postMessage({
+                                type: 'firebase_auth_error',
+                                error: error.message
+                            }, window.opener.location.origin);
+                        }
+                        window.close();
+                    }
+                });
+            </script>
+            <?php wp_footer(); ?>
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+
+    private function get_provider_config($provider) {
+        $options = get_option('firebase_woo_auth_options');
+        $config = '';
+
+        switch ($provider) {
+            case 'google':
+                if (!empty($options['enable_google'])) {
+                    $config = 'firebase.auth.GoogleAuthProvider.PROVIDER_ID';
+                }
+                break;
+            case 'github':
+                if (!empty($options['enable_github'])) {
+                    $config = 'firebase.auth.GithubAuthProvider.PROVIDER_ID';
+                }
+                break;
+            case 'twitter':
+                if (!empty($options['enable_twitter'])) {
+                    $config = 'firebase.auth.TwitterAuthProvider.PROVIDER_ID';
+                }
+                break;
+            case 'microsoft':
+                if (!empty($options['enable_microsoft'])) {
+                    $config = 'firebase.auth.OAuthProvider("microsoft.com").PROVIDER_ID';
+                }
+                break;
+            case 'phone':
+                if (!empty($options['enable_phone'])) {
+                    $config = 'firebase.auth.PhoneAuthProvider.PROVIDER_ID';
+                }
+                break;
+            default:
+                if (!empty($options['enable_email_password'])) {
+                    $config = '{
+                        provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+                        requireDisplayName: true
+                    }';
+                }
+        }
+
+        return $config;
     }
 }

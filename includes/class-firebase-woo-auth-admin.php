@@ -14,6 +14,11 @@ class FirebaseWooAuthAdmin {
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('wp_ajax_firebase_woo_auth_save_settings', array($this, 'ajax_save_settings'));
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_notices', array($this, 'display_admin_notices'));
+        
+        // Add debug log page
+        add_action('admin_menu', array($this, 'add_debug_log_page'));
     }
 
     public function enqueue_admin_assets($hook) {
@@ -247,6 +252,26 @@ class FirebaseWooAuthAdmin {
         register_setting('firebase_woo_auth_options_group', $this->option_name, array(
             'sanitize_callback' => array($this, 'sanitize_settings')
         ));
+
+        add_settings_section(
+            'firebase_woo_auth_main',
+            __('Firebase Configuration', 'firebase-woo-auth'),
+            array($this, 'render_section_info'),
+            'firebase-woo-auth'
+        );
+
+        // Add debug log setting
+        add_settings_field(
+            'enable_debug_log',
+            __('Enable Debug Log', 'firebase-woo-auth'),
+            array($this, 'render_checkbox_field'),
+            'firebase-woo-auth',
+            'firebase_woo_auth_main',
+            array(
+                'name' => 'enable_debug_log',
+                'description' => __('Enable detailed logging of authentication issues.', 'firebase-woo-auth')
+            )
+        );
     }
 
     public function render_text_field_with_tooltip($id, $label, $tooltip) {
@@ -307,14 +332,252 @@ class FirebaseWooAuthAdmin {
     }
 
     public function sanitize_settings($input) {
-        if (!is_array($input)) {
-            return array();
+        $sanitized = array();
+        
+        // Sanitize all text fields
+        $text_fields = array(
+            'firebase_api_key',
+            'firebase_auth_domain',
+            'firebase_project_id',
+            'firebase_storage_bucket',
+            'firebase_messaging_sender_id',
+            'firebase_app_id',
+            'firebase_measurement_id',
+            'terms_of_service_url',
+            'privacy_policy_url'
+        );
+        
+        foreach ($text_fields as $field) {
+            if (isset($input[$field])) {
+                $sanitized[$field] = sanitize_text_field($input[$field]);
+            }
+        }
+        
+        // Sanitize boolean fields
+        $boolean_fields = array(
+            'enable_phone',
+            'enable_google',
+            'enable_github',
+            'enable_twitter',
+            'enable_email_password',
+            'enable_email_link',
+            'enable_microsoft',
+            'enable_debug_log'
+        );
+        
+        foreach ($boolean_fields as $field) {
+            $sanitized[$field] = isset($input[$field]) ? (bool) $input[$field] : false;
+        }
+        
+        return $sanitized;
+    }
+
+    public function add_admin_menu() {
+        add_menu_page(
+            __('Firebase Woo Auth', 'firebase-woo-auth'),
+            __('Firebase Woo Auth', 'firebase-woo-auth'),
+            'manage_options',
+            'firebase-woo-auth',
+            array($this, 'render_admin_page'),
+            'dashicons-admin-site',
+            6
+        );
+    }
+
+    public function render_admin_page() {
+        // Implementation of render_admin_page method
+    }
+
+    public function add_debug_log_page() {
+        add_submenu_page(
+            'firebase-woo-auth',
+            __('Debug Log', 'firebase-woo-auth'),
+            __('Debug Log', 'firebase-woo-auth'),
+            'manage_options',
+            'firebase-woo-auth-debug',
+            array($this, 'render_debug_log_page')
+        );
+    }
+
+    public function render_debug_log_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'firebase-woo-auth'));
         }
 
-        $output = array();
-        foreach ($input as $key => $value) {
-            $output[$key] = sanitize_text_field($value);
+        // Handle log clearing
+        if (isset($_GET['action']) && $_GET['action'] === 'clear_log') {
+            check_admin_referer('clear_debug_log');
+            $this->clear_debug_log();
+            wp_redirect(add_query_arg('cleared', '1', remove_query_arg('action')));
+            exit;
         }
-        return $output;
+
+        // Handle log rotation
+        $this->rotate_debug_log();
+
+        $log_file = FIREBASE_WOO_AUTH_PATH . 'debug.log';
+        $log_content = '';
+        
+        if (file_exists($log_file)) {
+            $log_content = file_get_contents($log_file);
+        }
+
+        ?>
+        <div class="wrap">
+            <h1><?php _e('Firebase WooCommerce Auth Debug Log', 'firebase-woo-auth'); ?></h1>
+            
+            <?php if (isset($_GET['cleared'])): ?>
+                <div class="notice notice-success">
+                    <p><?php _e('Debug log has been cleared.', 'firebase-woo-auth'); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <div class="card">
+                <h2><?php _e('Debug Log', 'firebase-woo-auth'); ?></h2>
+                <p><?php _e('This page shows the debug log for Firebase authentication issues.', 'firebase-woo-auth'); ?></p>
+                
+                <div class="debug-log-container">
+                    <pre><?php echo esc_html($log_content); ?></pre>
+                </div>
+                
+                <p>
+                    <a href="<?php echo esc_url(wp_nonce_url(add_query_arg('action', 'clear_log'), 'clear_debug_log')); ?>" class="button">
+                        <?php _e('Clear Log', 'firebase-woo-auth'); ?>
+                    </a>
+                </p>
+            </div>
+
+            <div class="card">
+                <h2><?php _e('Security Notice', 'firebase-woo-auth'); ?></h2>
+                <p><?php _e('For security reasons, please ensure the debug.log file is not accessible via web. Add the following to your .htaccess file:', 'firebase-woo-auth'); ?></p>
+                <pre><code># Block access to debug.log
+&lt;Files "debug.log"&gt;
+    Order allow,deny
+    Deny from all
+&lt;/Files&gt;</code></pre>
+                <p><?php _e('Or if you\'re using Nginx, add this to your server configuration:', 'firebase-woo-auth'); ?></p>
+                <pre><code># Block access to debug.log
+location ~* /debug\.log$ {
+    deny all;
+    return 403;
+}</code></pre>
+            </div>
+        </div>
+        
+        <style>
+            .debug-log-container {
+                background: #f1f1f1;
+                padding: 10px;
+                max-height: 500px;
+                overflow-y: auto;
+                border: 1px solid #ddd;
+            }
+            .debug-log-container pre {
+                margin: 0;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+            .card {
+                background: #fff;
+                border: 1px solid #ccd0d4;
+                box-shadow: 0 1px 1px rgba(0,0,0,.04);
+                margin: 20px 0;
+                padding: 20px;
+            }
+            pre code {
+                background: #f1f1f1;
+                padding: 10px;
+                display: block;
+            }
+        </style>
+        <?php
+    }
+
+    private function clear_debug_log() {
+        $log_file = FIREBASE_WOO_AUTH_PATH . 'debug.log';
+        if (file_exists($log_file)) {
+            file_put_contents($log_file, '');
+        }
+    }
+
+    private function rotate_debug_log() {
+        $log_file = FIREBASE_WOO_AUTH_PATH . 'debug.log';
+        $max_size = 5 * 1024 * 1024; // 5MB
+        $backup_count = 5;
+
+        if (file_exists($log_file) && filesize($log_file) > $max_size) {
+            // Create backup directory if it doesn't exist
+            $backup_dir = FIREBASE_WOO_AUTH_PATH . 'logs/';
+            if (!file_exists($backup_dir)) {
+                mkdir($backup_dir, 0755, true);
+            }
+
+            // Rotate existing backups
+            for ($i = $backup_count - 1; $i >= 0; $i--) {
+                $old_file = $backup_dir . 'debug.log.' . $i;
+                $new_file = $backup_dir . 'debug.log.' . ($i + 1);
+                
+                if (file_exists($old_file)) {
+                    if ($i === $backup_count - 1) {
+                        unlink($old_file);
+                    } else {
+                        rename($old_file, $new_file);
+                    }
+                }
+            }
+
+            // Move current log to backup
+            rename($log_file, $backup_dir . 'debug.log.0');
+            
+            // Create new empty log file
+            touch($log_file);
+            chmod($log_file, 0644);
+        }
+    }
+
+    private function log_error($message) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Firebase WooCommerce Auth: ' . $message);
+        }
+        
+        // Log to admin debug log if enabled
+        $options = get_option('firebase_woo_auth_options');
+        if (!empty($options['enable_debug_log'])) {
+            $log_file = FIREBASE_WOO_AUTH_PATH . 'debug.log';
+            $timestamp = current_time('mysql');
+            $log_message = "[{$timestamp}] {$message}\n";
+            
+            // Ensure log directory exists and is writable
+            if (!file_exists(dirname($log_file))) {
+                mkdir(dirname($log_file), 0755, true);
+            }
+            
+            // Write to log file with proper permissions
+            if (file_put_contents($log_file, $log_message, FILE_APPEND)) {
+                chmod($log_file, 0644);
+            }
+        }
+    }
+
+    public function display_admin_notices() {
+        $options = get_option('firebase_woo_auth_options');
+        
+        // Check if WooCommerce is active
+        if (!class_exists('WooCommerce')) {
+            ?>
+            <div class="notice notice-error">
+                <p><?php _e('Firebase WooCommerce Auth requires WooCommerce to be installed and activated.', 'firebase-woo-auth'); ?></p>
+            </div>
+            <?php
+        }
+        
+        // Check if Firebase configuration is complete
+        if (empty($options['firebase_api_key']) || empty($options['firebase_auth_domain'])) {
+            ?>
+            <div class="notice notice-warning">
+                <p><?php _e('Firebase WooCommerce Auth is not fully configured. Please complete the Firebase configuration.', 'firebase-woo-auth'); ?></p>
+            </div>
+            <?php
+        }
     }
 }
