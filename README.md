@@ -1,4 +1,4 @@
-# Firebase WooCommerce Auth
+# Firebase Authentication for WooCommerce
 
 [![WordPress Plugin](https://img.shields.io/badge/WordPress-Plugin-blue.svg)](https://wordpress.org/)
 [![WooCommerce Compatible](https://img.shields.io/badge/WooCommerce-Compatible-green.svg)](https://woocommerce.com/)
@@ -26,7 +26,7 @@ _Author: Ayrop_
 
 ## Overview
 
-**Firebase WooCommerce Auth** enables users to log into your WooCommerce store using Firebase's powerful Authentication methods—including Google, Email/Password, Phone, GitHub, Twitter, Microsoft, and more. Users are seamlessly logged into WooCommerce, and new accounts are created dynamically with synced profile data.
+**Firebase Authentication for WooCommerce** enables users to log into your WooCommerce store using Firebase's powerful Authentication methods—including Google, Email/Password, Phone, GitHub, Twitter, Microsoft, and more. Users are seamlessly logged into WooCommerce, and new accounts are created dynamically with synced profile data.
 
 ---
 
@@ -50,16 +50,11 @@ _Author: Ayrop_
 Below are some admin settings screenshots from the plugin:
 
 <p align="center">
-  <img src="assets/images/screenshots/Firebase%20Configuration.png" alt="Firebase Configuration Settings" width="65%" />
+  <img src="assets/images/screenshots/firebase-configuration.png" alt="Firebase Configuration Settings" width="65%" />
 </p>
 
 <p align="center">
-  <img src="assets/images/screenshots/Sign-In%20Methods.png" alt="Sign-In Methods Settings" width="65%" />
-</p>
-
-<p align="center">
-  <img src="assets\images\screenshots\Easy%20login%20during%20the%20checkout.png" alt="Legal Links Settings" width="65%" />
-  
+  <img src="assets/images/screenshots/easy-login-during-checkout.png" alt="Easy Login During Checkout" width="65%" />
 </p>
 
 ---
@@ -83,7 +78,7 @@ Below are some admin settings screenshots from the plugin:
   - Upload the `.zip` file via **Plugins > Add New > Upload Plugin**.
 
 **2. Activate**
-- In your WordPress Admin, go to **Plugins** and activate **Firebase WooCommerce Auth**.
+- In your WordPress Admin, go to **Plugins** and activate **Firebase Authentication for WooCommerce**.
 
 ---
 
@@ -101,7 +96,7 @@ Below are some admin settings screenshots from the plugin:
 
 Once activated:
 
-1. Go to **Settings > Firebase Woo Auth** in your WordPress Admin area.
+1. Go to **Settings > Firebase Authentication for WooCommerce** in your WordPress Admin area.
 2. Paste your Firebase configuration values (API Key, Auth Domain, etc.).
 3. Enable the authentication providers you want to offer.
 4. (Optional) Set **Terms of Service** and **Privacy Policy** URLs for legal compliance.
