@@ -1,12 +1,12 @@
 <?php
 /*
-Plugin Name: Firebase WooCommerce Authentication
-Plugin URI: https://ayrop.com
+Plugin Name: Firebase Authentication for WooCommerce
+Plugin URI: https://ayrop.com/plugins/firebase-auth-for-woocommerce
 Description: Integrate Firebase Authentication with WooCommerce for secure and modern user authentication.
-Version: 1.0.0
+Version: 1.0.1
 Author: Ayrop.com
 Author URI: https://ayrop.com
-Text Domain: firebase-woo-auth
+Text Domain: firebase-authentication-for-woocommerce
 Domain Path: /languages
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
