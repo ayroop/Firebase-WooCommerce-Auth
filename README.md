@@ -1,5 +1,7 @@
 # Firebase Authentication for WooCommerce
 
+![Firebase Authentication for WooCommerce Banner](assets/images/Firebase-Authentication-for-WooCommerce-banner.png)
+
 [![WordPress Plugin](https://img.shields.io/badge/WordPress-Plugin-blue.svg)](https://wordpress.org/)
 [![WooCommerce Compatible](https://img.shields.io/badge/WooCommerce-Compatible-green.svg)](https://woocommerce.com/)
 [![Firebase Auth](https://img.shields.io/badge/Firebase-Auth-yellow.svg)](https://firebase.google.com/products/auth)
