@@ -88,54 +88,48 @@ class FirebaseWooAuth {
     }
 
     public function enqueue_scripts() {
-        $options = get_option('firebase_woo_auth_options');
-
-		// Firebase SDK scripts
-		wp_enqueue_script('firebase-app', 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js', array(), null, true);
-		wp_enqueue_script('firebase-auth', 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js', array('firebase-app'), null, true);
-		wp_enqueue_script('firebase-ui', 'https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.js', array('firebase-auth'), null, true);
-		wp_enqueue_style('firebaseui-css', 'https://www.gstatic.com/firebasejs/ui/6.0.2/firebase-ui-auth.css');
-
-        // Custom script
-        wp_enqueue_script('firebase-woo-auth', FIREBASE_WOO_AUTH_URL . 'assets/js/firebase-woo-auth.js', array('jquery', 'firebase-app', 'firebase-auth', 'firebase-ui'), '1.1', true);
-
-        // Pass localized data to the script
-        wp_localize_script('firebase-woo-auth', 'FirebaseWooAuth', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'firebaseConfig' => $this->firebaseConfig,
-            'enable_phone' => !empty($options['enable_phone']),
-            'enable_google' => !empty($options['enable_google']),
-            'enable_github' => !empty($options['enable_github']),
-            'enable_twitter' => !empty($options['enable_twitter']),
-            'enable_email_password' => !empty($options['enable_email_password']),
-            'enable_email_link' => !empty($options['enable_email_link']),
-            'enable_microsoft' => !empty($options['enable_microsoft']),
-            'terms_of_service_url' => isset($options['terms_of_service_url']) ? esc_url($options['terms_of_service_url']) : '',
-            'privacy_policy_url' => isset($options['privacy_policy_url']) ? esc_url($options['privacy_policy_url']) : '',
-            'nonce' => wp_create_nonce('firebase_woo_auth_nonce')
-        ));
+        wp_enqueue_script(
+            'firebase-app',
+            'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js',
+            array(),
+            '9.6.0',
+            true
+        );
+        
+        wp_enqueue_script(
+            'firebase-auth',
+            'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js',
+            array('firebase-app'),
+            '9.6.0',
+            true
+        );
+        
+        wp_enqueue_script(
+            'firebase-woo-auth',
+            FIREBASE_WOO_AUTH_URL . 'assets/js/firebase-auth.js',
+            array('firebase-app', 'firebase-auth'),
+            FIREBASE_WOO_AUTH_VERSION,
+            true
+        );
+        
+        wp_enqueue_style(
+            'firebase-woo-auth',
+            FIREBASE_WOO_AUTH_URL . 'assets/css/firebase-auth.css',
+            array(),
+            FIREBASE_WOO_AUTH_VERSION
+        );
     }
 
     public function render_auth_ui() {
-    // Check if the user is already logged in
-    if (is_user_logged_in()) {
-        return; // Do not render FirebaseUI if the user is logged in
+        ?>
+        <div class="firebase-auth-container">
+            <div class="firebase-auth-header">
+                <img src="<?php echo esc_url(FIREBASE_WOO_AUTH_URL . 'assets/images/logo.png'); ?>" alt="<?php esc_attr_e('Firebase Authentication', 'firebase-authentication-for-woocommerce'); ?>" class="firebase-auth-logo">
+            </div>
+            <div id="firebase-auth-ui"></div>
+        </div>
+        <?php
     }
-
-    // Store the current page URL in the session or a transient
-    $current_page_url = home_url( add_query_arg( null, null ) );
-    set_transient( 'firebase_auth_redirect_url', $current_page_url, 60 * 60 ); // Store for 1 hour
-
-    // Render FirebaseUI if the user is not logged in
-    ob_start();
-    ?>
-    <div id="loader">
-        <img src="<?php echo FIREBASE_WOO_AUTH_URL . 'assets/images/ripples.svg'; ?>" alt="Loading...">
-    </div>
-    <div id="firebaseui-auth-container"></div>
-    <?php
-    return ob_get_clean();
-}
 
     public function firebase_authenticate() {
         try {
@@ -493,7 +487,7 @@ class FirebaseWooAuth {
         <!DOCTYPE html>
         <html>
         <head>
-            <title><?php _e('Authentication', 'firebase-woo-auth'); ?></title>
+            <title><?php _e('Authentication', 'firebase-authentication-for-woocommerce'); ?></title>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -612,5 +606,26 @@ class FirebaseWooAuth {
         }
 
         return $config;
+    }
+
+    public function handle_auth_callback() {
+        if (!isset($_GET['provider']) || !isset($_GET['nonce'])) {
+            wp_send_json_error(array('message' => esc_html__('Invalid request.', 'firebase-authentication-for-woocommerce')));
+        }
+        
+        $provider = sanitize_text_field(wp_unslash($_GET['provider']));
+        $nonce = sanitize_text_field(wp_unslash($_GET['nonce']));
+        
+        if (!wp_verify_nonce($nonce, 'firebase_auth_' . $provider)) {
+            wp_send_json_error(array('message' => esc_html__('Invalid nonce.', 'firebase-authentication-for-woocommerce')));
+        }
+        
+        // Process authentication
+        // ... existing code ...
+    }
+
+    public function get_auth_domain() {
+        $auth_domain = wp_parse_url(get_option('firebase_auth_domain'), PHP_URL_HOST);
+        return $auth_domain ?: '';
     }
 }

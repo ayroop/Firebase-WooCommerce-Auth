@@ -13,11 +13,20 @@ delete_option('firebase_woo_auth_storage_bucket');
 delete_option('firebase_woo_auth_messaging_sender_id');
 delete_option('firebase_woo_auth_app_id');
 
-// Delete debug logs
-$upload_dir = wp_upload_dir();
-$debug_log_path = $upload_dir['basedir'] . '/firebase-woo-auth-debug.log';
-if (file_exists($debug_log_path)) {
-    unlink($debug_log_path);
+// Delete debug log file
+$log_file = WP_CONTENT_DIR . '/firebase-auth-logs/debug.log';
+if (file_exists($log_file)) {
+    wp_delete_file($log_file);
+}
+
+// Delete backup log files
+$backup_dir = WP_CONTENT_DIR . '/firebase-auth-logs/';
+if (is_dir($backup_dir)) {
+    $files = glob($backup_dir . 'debug-*.log');
+    foreach ($files as $file) {
+        wp_delete_file($file);
+    }
+    rmdir($backup_dir);
 }
 
 // Clear any cached data
